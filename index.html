@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Asset Studio 2026 - Test Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white p-8 font-sans">
+    <div class="max-w-md mx-auto space-y-6">
+        <h1 class="text-2xl font-bold border-b border-slate-700 pb-2 text-blue-400">Pro Asset Studio 2026</h1>
+        
+        <div class="space-y-4">
+            <p class="text-slate-400">Upload any photo (Pet, Child, Object) to test AI Recognition:</p>
+            <input type="file" id="photoInput" accept="image/*" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+            <button onclick="analyzeImage()" id="btnAnalyze" class="w-full bg-green-600 p-3 rounded-lg font-bold hover:bg-green-700 transition disabled:opacity-50">Analyze & Memify</button>
+        </div>
+
+        <div id="status" class="hidden text-sm italic text-blue-300">AI is thinking...</div>
+        <div id="result" class="p-4 bg-slate-800 rounded-lg hidden border border-slate-700">
+            <h2 class="text-xs uppercase text-slate-500 font-bold mb-2">AI Recognition Result:</h2>
+            <p id="aiOutput" class="text-lg"></p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenAI } from "https://esm.run/@google/generative-ai";
+
+        // REPLACE THE STRING BELOW WITH YOUR GOOGLE API KEY
+        const API_KEY = "PASTE_YOUR_KEY_HERE";
+        const genAI = new GoogleGenAI(API_KEY);
+
+        window.analyzeImage = async () => {
+            const input = document.getElementById('photoInput');
+            const status = document.getElementById('status');
+            const resultDiv = document.getElementById('result');
+            const output = document.getElementById('aiOutput');
+
+            if (!input.files[0]) return alert("Please select an image first!");
+
+            status.classList.remove('hidden');
+            
+            // Convert file to Base64 for the AI
+            const reader = new FileReader();
+            reader.readAsDataURL(input.files[0]);
+            reader.onload = async () => {
+                const base64Data = reader.result.split(',')[1];
+                
+                try {
+                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                    const prompt = "Identify the main subject in this image and its current situation. Then, suggest one funny 'vibe' or meme keyword for it. Format: Subject: [X], Situation: [Y], Vibe: [Z]";
+                    
+                    const result = await model.generateContent([
+                        prompt,
+                        { inlineData: { data: base64Data, mimeType: input.files[0].type } }
+                    ]);
+
+                    output.innerText = result.response.text();
+                    resultDiv.classList.remove('hidden');
+                } catch (err) {
+                    output.innerText = "Error: " + err.message;
+                    resultDiv.classList.remove('hidden');
+                } finally {
+                    status.classList.add('hidden');
+                }
+            };
+        };
+    </script>
+</body>
+</html>
